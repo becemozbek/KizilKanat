@@ -1,11 +1,47 @@
-pymavlink>=2.4.40
-mavsdk>=1.4.0
-ultralytics>=8.0.0
-opencv-python>=4.8.0
+# ─────────────────────────────────────────────
+#  KIZIL-2 Python Bağımlılıkları
+#  pip install -r requirements.txt
+#
+#  Donanım notları:
+#    RTL-SDR   → pyrtlsdr (librtlsdr driver gerekli)
+#    OAK-D Lite → depthai
+#    Jetson     → torch, torchvision PyPI'dan değil,
+#                 NVIDIA JetPack wheel'inden kurulur
+# ─────────────────────────────────────────────
+
+# ── Temel / her ortamda ───────────────────────
 numpy>=1.24.0
-scipy>=1.11.0
+pyyaml>=6.0.1
+
+# ── MAVLink / Uçuş kontrolü ──────────────────
+pymavlink>=2.4.40
+# mavsdk>=1.4.0          # opsiyonel, pymavlink yeterli
+
+# ── Görüntü işleme / YOLO ────────────────────
+opencv-python>=4.8.0
+ultralytics>=8.0.0       # YOLOv8
+# torch ve torchvision Jetson'da JetPack wheel ile kurulur:
+# https://developer.download.nvidia.com/compute/redist/jp/
+
+# ── GCS Backend ───────────────────────────────
 fastapi>=0.104.0
 uvicorn>=0.24.0
 websockets>=12.0
-pyrtlsdr>=0.3.0
-filterpy>=1.4.5
+
+# ── Sensör füzyonu ────────────────────────────
+scipy>=1.11.0
+# filterpy>=1.4.5        # EKF için alternatif, şimdilik numpy yeterli
+
+# ── SDR ───────────────────────────────────────
+# pyrtlsdr>=0.3.0        # RTL-SDR dongle gelince aktif et
+                         # librtlsdr: sudo apt install librtlsdr-dev
+
+# ── Ses uyarıları ─────────────────────────────
+pyttsx3>=2.90            # TTS — Windows SAPI / Linux espeak
+
+# ── Kamera ────────────────────────────────────
+# depthai>=2.24.0        # OAK-D Lite gelince aktif et
+                         # pip install depthai
+
+# ── Geliştirme / Test ─────────────────────────
+pytest>=7.4.0
