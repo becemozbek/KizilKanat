@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KIZIL-2 GCS</title>
+
+  <!-- Leaflet.js -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Üst bar ── */
+    .topbar {
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: #C0392B;
+      letter-spacing: 2px;
+    }
+    .logo span { color: #e6edf3; font-weight: 300; }
+    .badge {
+      background: #C0392B22;
+      border: 1px solid #C0392B;
+      color: #C0392B;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge.yesil { background: #27ae6022; border-color: #27AE60; color: #27AE60; }
+
+    /* ── Ana layout ── */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sol panel ── */
+    .panel {
+      width: 300px;
+      background: #161b22;
+      border-right: 1px solid #30363d;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-baslik {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .kart {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .input-grup { margin-bottom: 8px; }
+    .input-grup label {
+      display: block;
+      font-size: 11px;
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+    .input-grup input {
+      width: 100%;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    .input-grup input:focus {
+      outline: none;
+      border-color: #C0392B;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .btn-kirmizi {
+      background: #C0392B;
+      color: white;
+    }
+    .btn-kirmizi:hover { background: #a93226; }
+    .btn-gri {
+      background: #21262d;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      margin-top: 8px;
+    }
+    .btn-gri:hover { background: #30363d; }
+
+    /* Engel listesi */
+    .engel-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 12px;
+    }
+    .engel-item:last-child { border-bottom: none; }
+    .engel-renk {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Rota bilgisi */
+    .bilgi-satir {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      padding: 4px 0;
+      border-bottom: 1px solid #21262d;
+    }
+    .bilgi-satir:last-child { border-bottom: none; }
+    .bilgi-satir .deger { color: #58a6ff; font-weight: 600; }
+
+    /* Durum mesajı */
+    #durum {
+      font-size: 12px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      text-align: center;
+      display: none;
+    }
+    #durum.hata    { background: #C0392B22; border: 1px solid #C0392B; color: #C0392B; }
+    #durum.basari  { background: #27ae6022; border: 1px solid #27AE60; color: #27AE60; }
+    #durum.bilgi   { background: #2980b922; border: 1px solid #2980B9; color: #2980B9; }
+
+    /* ── Harita ── */
+    #harita { flex: 1; }
+
+    /* Leaflet dark override */
+    .leaflet-tile { filter: brightness(0.7) saturate(0.8); }
+  </style>
+</head>
+<body>
+
+<!-- Üst bar -->
+<div class="topbar">
+  <div class="logo">KIZIL<span>-2</span></div>
+  <div class="badge">GCS v1.0</div>
+  <div class="badge yesil" id="durum-badge">● SİSTEM HAZIR</div>
+  <div style="margin-left:auto; font-size:12px; color:#8b949e;" id="saat"></div>
+</div>
+
+<!-- Ana layout -->
+<div class="main">
+
+  <!-- Sol panel -->
+  <div class="panel">
+
+    <!-- Rota Planlama -->
+    <div>
+      <div class="panel-baslik">Rota Planlama</div>
+      <div class="kart">
+        <div class="input-grup">
+          <label>Başlangıç Enlem</label>
+          <input type="number" id="bas-lat" value="41.0000" step="0.0001">
+        </div>
+        <div class="input-grup">
+          <label>Başlangıç Boylam</label>
+          <input type="number" id="bas-lon" value="29.0000" step="0.0001">
+        </div>
+        <div class="input-grup">
+          <label>Hedef Enlem</label>
+          <input type="number" id="hit-lat" value="41.0090" step="0.0001">
+        </div>
+        <div class="input-grup">
+          <label>Hedef Boylam</label>
+          <input type="number" id="hit-lon" value="29.0090" step="0.0001">
+        </div>
+        <button class="btn btn-kirmizi" onclick="rotaHesapla()">RRT ROTA HESAPLA</button>
+        <button class="btn btn-gri" onclick="demoYukle()">Demo Verisi Yükle</button>
+      </div>
+      <div id="durum"></div>
+    </div>
+
+    <!-- Engel Listesi -->
+    <div>
+      <div class="panel-baslik">Tespit Edilen Engeller</div>
+      <div class="kart" id="engel-liste">
+        <div style="color:#8b949e; font-size:12px;">Henüz engel yok.</div>
+      </div>
+    </div>
+
+    <!-- Rota Bilgisi -->
+    <div>
+      <div class="panel-baslik">Rota Bilgisi</div>
+      <div class="kart" id="rota-bilgi">
+        <div style="color:#8b949e; font-size:12px;">Rota hesaplanmadı.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Harita -->
+  <div id="harita"></div>
+</div>
+
+<script>
+// ── Harita başlat ──────────────────────────────────────────────
+const harita = L.map('harita', { zoomControl: true }).setView([41.005, 29.005], 14);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap',
+  maxZoom: 19
+}).addTo(harita);
+
+// Katmanlar
+let rotaKatman   = null;
+let engelKatman  = L.layerGroup().addTo(harita);
+let markerKatman = L.layerGroup().addTo(harita);
+
+// ── Engel renkleri ─────────────────────────────────────────────
+const ENGEL_RENK = {
+  enkaz:      '#E74C3C',
+  kirik_yol:  '#E67E22',
+  duvar:      '#9B59B6',
+  bina:       '#3498DB',
+};
+
+// ── Saat ───────────────────────────────────────────────────────
+function saatGuncelle() {
+  const now = new Date();
+  document.getElementById('saat').textContent =
+    now.toLocaleTimeString('tr-TR');
+}
+setInterval(saatGuncelle, 1000);
+saatGuncelle();
+
+// ── Durum mesajı ───────────────────────────────────────────────
+function durumGoster(mesaj, tip = 'bilgi') {
+  const el = document.getElementById('durum');
+  el.textContent = mesaj;
+  el.className   = tip;
+  el.style.display = 'block';
+  if (tip === 'basari') setTimeout(() => el.style.display = 'none', 4000);
+}
+
+// ── Haritayı temizle ───────────────────────────────────────────
+function haritaTemizle() {
+  if (rotaKatman) harita.removeLayer(rotaKatman);
+  engelKatman.clearLayers();
+  markerKatman.clearLayers();
+}
+
+// ── Sonuçları haritaya çiz ─────────────────────────────────────
+function haritaCiz(veri) {
+  haritaTemizle();
+
+  // Engeller
+  veri.engeller.forEach(e => {
+    const renk = ENGEL_RENK[e.tip] || '#888';
+    L.circle([e.lat, e.lon], {
+      radius: e.r,
+      color: renk, fillColor: renk,
+      fillOpacity: 0.35, weight: 2
+    }).bindPopup(`<b>${e.tip.replace('_', ' ').toUpperCase()}</b><br>R: ${e.r}m`)
+      .addTo(engelKatman);
+  });
+
+  // Rota çizgisi
+  const koordinatlar = veri.rota.map(r => [r.lat, r.lon]);
+  rotaKatman = L.polyline(koordinatlar, {
+    color: '#2ECC71', weight: 4,
+    opacity: 0.9, dashArray: null
+  }).addTo(harita);
+
+  // Waypoint'ler
+  koordinatlar.forEach((k, i) => {
+    const renk  = i === 0 ? '#2980B9' : i === koordinatlar.length-1 ? '#27AE60' : '#F39C12';
+    const label = i === 0 ? 'B' : i === koordinatlar.length-1 ? 'H' : i.toString();
+    L.circleMarker(k, {
+      radius: 8, color: renk,
+      fillColor: renk, fillOpacity: 1, weight: 2
+    }).bindPopup(
+      i === 0 ? '<b>Başlangıç</b>' :
+      i === koordinatlar.length-1 ? '<b>Hedef</b>' :
+      `<b>Waypoint #${i}</b><br>${k[0].toFixed(6)}, ${k[1].toFixed(6)}`
+    ).addTo(markerKatman);
+  });
+
+  // Haritayı rota etrafında ortala
+  harita.fitBounds(rotaKatman.getBounds(), { padding: [40, 40] });
+
+  // Engel listesi
+  const engelListeEl = document.getElementById('engel-liste');
+  engelListeEl.innerHTML = veri.engeller.map(e => `
+    <div class="engel-item">
+      <div class="engel-renk" style="background:${ENGEL_RENK[e.tip] || '#888'}"></div>
+      <div>
+        <div>${e.tip.replace('_', ' ')}</div>
+        <div style="color:#8b949e; font-size:11px;">${e.lat.toFixed(5)}, ${e.lon.toFixed(5)} — R:${e.r}m</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Rota bilgisi
+  let toplamMesafe = 0;
+  for (let i = 1; i < koordinatlar.length; i++) {
+    const [lat1, lon1] = koordinatlar[i-1];
+    const [lat2, lon2] = koordinatlar[i];
+    const dlat = (lat2-lat1) * Math.PI/180 * 6371000;
+    const dlon = (lon2-lon1) * Math.PI/180 * Math.cos(lat1*Math.PI/180) * 6371000;
+    toplamMesafe += Math.sqrt(dlat**2 + dlon**2);
+  }
+
+  document.getElementById('rota-bilgi').innerHTML = `
+    <div class="bilgi-satir">
+      <span>Waypoint sayısı</span>
+      <span class="deger">${koordinatlar.length}</span>
+    </div>
+    <div class="bilgi-satir">
+      <span>Toplam mesafe</span>
+      <span class="deger">${toplamMesafe.toFixed(0)}m</span>
+    </div>
+    <div class="bilgi-satir">
+      <span>Engel sayısı</span>
+      <span class="deger">${veri.engeller.length}</span>
+    </div>
+    <div class="bilgi-satir">
+      <span>Algoritma</span>
+      <span class="deger">RRT*</span>
+    </div>
+  `;
+
+  document.getElementById('durum-badge').textContent = '● ROTA HAZIR';
+  document.getElementById('durum-badge').style.borderColor = '#27AE60';
+  document.getElementById('durum-badge').style.color = '#27AE60';
+}
+
+// ── RRT rota hesapla ───────────────────────────────────────────
+async function rotaHesapla() {
+  durumGoster('RRT hesaplanıyor...', 'bilgi');
+  document.getElementById('durum-badge').textContent = '● HESAPLANIYOR';
+
+  const istek = {
+    baslangic_lat: parseFloat(document.getElementById('bas-lat').value),
+    baslangic_lon: parseFloat(document.getElementById('bas-lon').value),
+    hedef_lat:     parseFloat(document.getElementById('hit-lat').value),
+    hedef_lon:     parseFloat(document.getElementById('hit-lon').value),
+    engeller: [
+      { lat: 41.003, lon: 29.002, yaricap_metre: 40, tip: "enkaz" },
+      { lat: 41.005, lon: 29.005, yaricap_metre: 60, tip: "kirik_yol" },
+      { lat: 41.007, lon: 29.004, yaricap_metre: 35, tip: "duvar" },
+      { lat: 41.006, lon: 29.007, yaricap_metre: 50, tip: "bina" },
+    ]
+  };
+
+  try {
+    const yanit = await fetch('/api/rota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(istek)
+    });
+    const veri = await yanit.json();
+    if (veri.basari) {
+      haritaCiz(veri);
+      durumGoster('Rota başarıyla hesaplandı!', 'basari');
+    } else {
+      durumGoster('Rota bulunamadı — engeller çok yoğun.', 'hata');
+    }
+  } catch (err) {
+    durumGoster('Sunucu hatası: ' + err.message, 'hata');
+  }
+}
+
+// ── Demo verisi ────────────────────────────────────────────────
+async function demoYukle() {
+  durumGoster('Demo yükleniyor...', 'bilgi');
+  try {
+    const yanit = await fetch('/api/demo');
+    const veri  = await yanit.json();
+    if (veri.basari) {
+      document.getElementById('bas-lat').value = veri.baslangic.lat;
+      document.getElementById('bas-lon').value = veri.baslangic.lon;
+      document.getElementById('hit-lat').value = veri.hedef.lat;
+      document.getElementById('hit-lon').value = veri.hedef.lon;
+      haritaCiz(veri);
+      durumGoster('Demo verisi yüklendi!', 'basari');
+    }
+  } catch (err) {
+    durumGoster('Sunucu bağlantısı yok.', 'hata');
+  }
+}
+
+// Sayfa açılışında demo yükle
+window.onload = () => setTimeout(demoYukle, 500);
+</script>
+</body>
+</html>
