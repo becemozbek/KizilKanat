@@ -68,23 +68,38 @@ def rota_hesapla(istek: RotaIstegi):
 
 @app.get("/api/demo")
 def demo_rota():
-    """Hazır demo veri — frontend ilk açılışta bunu yükler."""
+    """Kahramanmaraş deprem bölgesi — YOLO'dan gelecek engellerin simülasyonu."""
     from drone.mission.rrt_planner import GPSEngel
+    # Merkez: 37.5753, 36.9228 — gerçek Kahramanmaraş koordinatları
+    # Saha ekibi başlangıç → arama hedefi (~900m mesafe)
+    BAS_LAT, BAS_LON = 37.5730, 36.9180
+    HIT_LAT, HIT_LON = 37.5820, 36.9290
     engeller = [
-        GPSEngel(41.003, 29.002, 40, "enkaz"),
-        GPSEngel(41.005, 29.005, 60, "kirik_yol"),
-        GPSEngel(41.007, 29.004, 35, "duvar"),
-        GPSEngel(41.006, 29.007, 50, "bina"),
+        # YOLO "enkaz" tespitleri — çökmüş binalar
+        GPSEngel(37.5745, 36.9195, 55, "enkaz"),
+        GPSEngel(37.5760, 36.9210, 70, "enkaz"),
+        GPSEngel(37.5800, 36.9260, 45, "enkaz"),
+        # YOLO "kırık yol" tespitleri
+        GPSEngel(37.5755, 36.9230, 40, "kirik_yol"),
+        GPSEngel(37.5785, 36.9245, 35, "kirik_yol"),
+        # YOLO "duvar" tespitleri — yıkılmış duvarlar
+        GPSEngel(37.5770, 36.9200, 30, "duvar"),
+        GPSEngel(37.5810, 36.9270, 25, "duvar"),
+        # YOLO "bina" tespitleri — hasarlı ama ayakta
+        GPSEngel(37.5740, 36.9215, 50, "bina"),
+        GPSEngel(37.5795, 36.9255, 40, "bina"),
     ]
-    rota = kara_rotasi_hesapla(41.0, 29.0, 41.009, 29.009, engeller)
+    rota = kara_rotasi_hesapla(BAS_LAT, BAS_LON, HIT_LAT, HIT_LON, engeller)
+    if rota is None:
+        return {"basari": False, "mesaj": "Demo rotası hesaplanamadı"}
     return {
         "basari": True,
         "rota": [{"lat": r[0], "lon": r[1]} for r in rota],
         "engeller": [{"lat": e.lat, "lon": e.lon,
                       "r": e.yaricap_metre, "tip": e.tip}
                      for e in engeller],
-        "baslangic": {"lat": 41.0,   "lon": 29.0},
-        "hedef":     {"lat": 41.009, "lon": 29.009},
+        "baslangic": {"lat": BAS_LAT, "lon": BAS_LON},
+        "hedef":     {"lat": HIT_LAT, "lon": HIT_LON},
     }
 
 

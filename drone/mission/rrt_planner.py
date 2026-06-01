@@ -63,9 +63,9 @@ class RRTPlanlayici:
         engeller: List[Engel],
         alan_genislik: float = 1000,   # metre
         alan_yukseklik: float = 1000,  # metre
-        adim_uzunluk: float = 20,      # metre — her RRT adımı
-        max_iterasyon: int = 3000,
-        hedef_tolerans: float = 25,    # metre — hedefe bu kadar yaklaşınca tamam
+        adim_uzunluk: float = 10,      # metre — her RRT adımı
+        max_iterasyon: int = 5000,
+        hedef_tolerans: float = 15,    # metre — hedefe bu kadar yaklaşınca tamam
         guvenlik_payi: float = 5,      # metre — engel yarıçapına eklenir
     ):
         self.baslangic       = baslangic

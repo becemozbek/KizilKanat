@@ -195,19 +195,19 @@
       <div class="kart">
         <div class="input-grup">
           <label>Başlangıç Enlem</label>
-          <input type="number" id="bas-lat" value="41.0000" step="0.0001">
+          <input type="number" id="bas-lat" value="37.5730" step="0.0001">
         </div>
         <div class="input-grup">
           <label>Başlangıç Boylam</label>
-          <input type="number" id="bas-lon" value="29.0000" step="0.0001">
+          <input type="number" id="bas-lon" value="36.9180" step="0.0001">
         </div>
         <div class="input-grup">
           <label>Hedef Enlem</label>
-          <input type="number" id="hit-lat" value="41.0090" step="0.0001">
+          <input type="number" id="hit-lat" value="37.5820" step="0.0001">
         </div>
         <div class="input-grup">
           <label>Hedef Boylam</label>
-          <input type="number" id="hit-lon" value="29.0090" step="0.0001">
+          <input type="number" id="hit-lon" value="36.9290" step="0.0001">
         </div>
         <button class="btn btn-kirmizi" onclick="rotaHesapla()">RRT ROTA HESAPLA</button>
         <button class="btn btn-gri" onclick="demoYukle()">Demo Verisi Yükle</button>
@@ -241,10 +241,28 @@
 // ── Harita başlat ──────────────────────────────────────────────
 const harita = L.map('harita', { zoomControl: true }).setView([41.005, 29.005], 14);
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap',
-  maxZoom: 19
-}).addTo(harita);
+const katmanlar = {
+  'Uydu': L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { attribution: 'Esri World Imagery', maxZoom: 19 }
+  ),
+  'Sokak': L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenStreetMap', maxZoom: 19 }
+  ),
+  'Hibrit': L.layerGroup([
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Esri World Imagery', maxZoom: 19 }
+    ),
+    L.tileLayer(
+      'https://stamen-tiles.a.ssl.fastly.net/toner-hybrid/{z}/{x}/{y}.png',
+      { attribution: '© Stamen / OpenStreetMap', maxZoom: 18, opacity: 0.6 }
+    )
+  ])
+};
+katmanlar['Uydu'].addTo(harita);
+L.control.layers(katmanlar, {}, { position: 'topright' }).addTo(harita);
 
 // Katmanlar
 let rotaKatman   = null;
@@ -284,6 +302,35 @@ function haritaTemizle() {
   markerKatman.clearLayers();
 }
 
+// ── Catmull-Rom spline interpolasyonu ─────────────────────────
+function catmullRom(pts, bolum) {
+  if (pts.length < 2) return pts;
+  const sonuc = [];
+  const tam = [pts[0], ...pts, pts[pts.length - 1]];
+  for (let i = 1; i < tam.length - 2; i++) {
+    const p0 = tam[i - 1], p1 = tam[i], p2 = tam[i + 1], p3 = tam[i + 2];
+    for (let j = 0; j <= bolum; j++) {
+      const t  = j / bolum;
+      const t2 = t * t, t3 = t2 * t;
+      const lat = 0.5 * (
+        (2 * p1[0]) +
+        (-p0[0] + p2[0]) * t +
+        (2*p0[0] - 5*p1[0] + 4*p2[0] - p3[0]) * t2 +
+        (-p0[0] + 3*p1[0] - 3*p2[0] + p3[0]) * t3
+      );
+      const lon = 0.5 * (
+        (2 * p1[1]) +
+        (-p0[1] + p2[1]) * t +
+        (2*p0[1] - 5*p1[1] + 4*p2[1] - p3[1]) * t2 +
+        (-p0[1] + 3*p1[1] - 3*p2[1] + p3[1]) * t3
+      );
+      sonuc.push([lat, lon]);
+    }
+  }
+  sonuc.push(pts[pts.length - 1]);
+  return sonuc;
+}
+
 // ── Sonuçları haritaya çiz ─────────────────────────────────────
 function haritaCiz(veri) {
   haritaTemizle();
@@ -299,9 +346,10 @@ function haritaCiz(veri) {
       .addTo(engelKatman);
   });
 
-  // Rota çizgisi
+  // Rota çizgisi — Catmull-Rom spline ile yumuşatılmış
   const koordinatlar = veri.rota.map(r => [r.lat, r.lon]);
-  rotaKatman = L.polyline(koordinatlar, {
+  const yumusak = catmullRom(koordinatlar, 12);
+  rotaKatman = L.polyline(yumusak, {
     color: '#2ECC71', weight: 4,
     opacity: 0.9, dashArray: null
   }).addTo(harita);
