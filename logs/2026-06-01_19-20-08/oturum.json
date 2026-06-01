@@ -1,0 +1,35 @@
+{
+  "baslangic": "2026-06-01T19:20:08.652046",
+  "bitis": "2026-06-01T19:20:10.735686",
+  "sure_sn": 2.1,
+  "toplam_kayit": 100,
+  "max_irtifa_m": 50.58,
+  "max_hiz_ms": 11.92,
+  "min_batarya_v": 15.6,
+  "olaylar": [
+    {
+      "zaman": "19:20:08.652",
+      "mesaj": "Oturum baslatildi: C:\\Users\\B. Ecem\\Documents\\GitHub\\KızılKanat\\logs\\2026-06-01_19-20-08"
+    },
+    {
+      "zaman": "19:20:08.652",
+      "mesaj": "Arm komutu gonderildi"
+    },
+    {
+      "zaman": "19:20:09.048",
+      "mesaj": "Kalkis tamamlandi, irtifa: 48.24m"
+    },
+    {
+      "zaman": "19:20:09.692",
+      "mesaj": "Engel tespit edildi, rota hesaplaniyor"
+    },
+    {
+      "zaman": "19:20:10.319",
+      "mesaj": "Inis basladi"
+    },
+    {
+      "zaman": "19:20:10.735",
+      "mesaj": "Disarm"
+    }
+  ]
+}
