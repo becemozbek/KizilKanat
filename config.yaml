@@ -1,0 +1,157 @@
+# ─────────────────────────────────────────────
+#  KIZIL-2 Sistem Konfigürasyonu
+#  Donanım gelince sadece burası güncellenir,
+#  kod dosyalarına dokunulmaz.
+# ─────────────────────────────────────────────
+
+
+# ── Sistem ────────────────────────────────────
+sistem:
+  proje_adi: "KIZIL-2"
+  versiyon: "1.0"
+  sitl_modu: true          # false → gerçek Pixhawk
+  log_seviye: "INFO"       # DEBUG / INFO / WARNING / ERROR
+
+
+# ── MAVLink / Pixhawk ─────────────────────────
+mavlink:
+  # SITL modunda:
+  sitl_baglanti: "udp:127.0.0.1:14550"
+  # Gerçek Pixhawk (6C) gelince:
+  # gercek_baglanti: "/dev/ttyUSB0"
+  # baud_rate: 57600
+  bekleme_suresi_sn: 10
+  heartbeat_aralik_sn: 1
+  telemetri_frekans_hz: 10
+
+
+# ── Uçuş parametreleri ────────────────────────
+ucus:
+  kalkis_irtifa_m: 15        # metre
+  gorev_irtifasi_m: 30       # metre
+  max_hiz_ms: 10             # m/s
+  min_hiz_ms: 2              # m/s
+  hedef_tolerans_m: 2.0      # waypoint'e bu kadar yaklaşınca geçti say
+  # Motor: T-Motor V3115 900KV x4
+  # ESC: 60A x4
+  # Batarya: 6S 7000mAh LiPo
+
+
+# ── Batarya ───────────────────────────────────
+batarya:
+  hucre_sayisi: 6            # 6S
+  tam_voltaj_v: 25.2         # 6S tam = 4.2V x 6
+  uyari_voltaj_v: 22.2       # 3.7V/hücre
+  kritik_voltaj_v: 21.0      # 3.5V/hücre → RTL
+  uyari_yuzde: 30
+  kritik_yuzde: 15
+  max_sicaklik_c: 60
+
+
+# ── GPS / GNSS ────────────────────────────────
+gnss:
+  # Modül: M10 GPS (Holybro)
+  min_uydu_sayisi: 8         # bu kadar uydu olmadan kalkış yok
+  max_hdop: 2.0              # bu değerin üstünde GPS güvenilmez
+  gps_frekans_hz: 10
+
+
+# ── Sensör Füzyonu (EKF) ──────────────────────
+ekf:
+  # Süreç gürültüsü
+  q_konum: 0.01
+  q_hiz: 0.1
+  q_aci: 0.001
+  # Ölçüm gürültüsü
+  r_gnss_xy: 4.0
+  r_gnss_z: 9.0
+  r_vslam_konum: 0.04
+  r_vslam_aci: 0.01
+  imu_frekans_hz: 400
+  gnss_frekans_hz: 10
+
+
+# ── Kamera / Görüntü ──────────────────────────
+kamera:
+  # OAK-D Lite (Fixed Focus) veya IMX477
+  # tip: "oakd_lite"         # oakd_lite / imx477 / usb_webcam
+  tip: "mock"
+  cozunurluk: [1920, 1080]
+  fps: 30
+  # oak_d:
+  #   derinlik_min_m: 0.4
+  #   derinlik_max_m: 8.0
+
+
+# ── YOLO ──────────────────────────────────────
+yolo:
+  model: "yolov8n.pt"        # n=nano(hız), s=small, m=medium
+  # Jetson Nano için n veya s, Orin için m veya l
+  guven_esigi: 0.5
+  iou_esigi: 0.45
+  giris_boyutu: 416          # 416 → Nano, 640 → Orin
+  hedef_siniflar:
+    - enkaz
+    - insan
+    - arac
+    - duvar
+    - kirik_yol
+  # model_yolu: "models/kizil2_custom.pt"  # custom model eğitilince
+
+
+# ── RRT Rota Planlayıcı ───────────────────────
+rrt:
+  adim_uzunluk_m: 10
+  max_iterasyon: 5000
+  hedef_tolerans_m: 15
+  guvenlik_payi_m: 5
+  hedef_bias_orani: 0.15     # her iterasyonda hedefe gitme ihtimali
+  alan_genislik_m: 1000
+  alan_yukseklik_m: 1000
+
+
+# ── Skorlama ──────────────────────────────────
+skorlama:
+  agirliklar:
+    termal: 0.30             # w1 — termal sinyal
+    sdr: 0.25                # w2 — SDR sinyal yoğunluğu
+    engel: 0.20              # w3 — engel yoğunluğu (negatif)
+    mudahale: 0.15           # w4 — aktif müdahale (negatif)
+    mesafe: 0.10             # w5 — mesafe (negatif)
+
+
+# ── SDR ───────────────────────────────────────
+sdr:
+  mock_mod: true             # false → gerçek RTL-SDR dongle
+  gsm_frekans_mhz: 900
+  lte_frekans_mhz: 1800
+  wifi_frekans_mhz: 2400
+  tarama_suresi_sn: 2
+  # dongle:
+  #   sample_rate: 2048000
+  #   gain: 40
+
+
+# ── GCS ───────────────────────────────────────
+gcs:
+  host: "0.0.0.0"
+  port: 8000
+  harita_merkez_lat: 37.5730
+  harita_merkez_lon: 36.9180
+  harita_zoom: 15
+  websocket_aralik_sn: 1     # drone verisi ne sıklıkla güncellensin
+
+
+# ── Ses Uyarıları ─────────────────────────────
+ses:
+  aktif: true
+  hiz: 160                   # TTS konuşma hızı
+  hacim: 0.9
+
+
+# ── Telemetri Logger ──────────────────────────
+telemetri:
+  log_klasoru: "logs"
+  kayit_frekans_hz: 50
+  csv_aktif: true
+  json_aktif: true
